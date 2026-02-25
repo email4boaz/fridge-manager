@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧊 Fridge Manager</title>
+    <style>
+@charset "utf-8";
+
+:root { --color-primary: #38bdf8; --color-success: #22c55e; --color-warning: #f59e0b; --color-danger: #ef4444; --color-bg: #f0f9ff; --color-surface: #ffffff; --color-text: #1e293b; --color-text-secondary: #64748b; --color-border: #e2e8f0; }
+
+* { margin: 0px; padding: 0px; box-sizing: border-box; }
+
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background: var(--color-bg); color: var(--color-text); line-height: 1.6; padding-bottom: 80px; }
+
+.container { max-width: 1200px; margin: 0px auto; padding: 16px; }
+
+header { background: var(--color-surface); box-shadow: rgba(0, 0, 0, 0.08) 0px 2px 8px; padding: 20px 0px; margin-bottom: 24px; }
+
+h1 { font-size: 28px; color: var(--color-primary); margin-bottom: 4px; }
+
+.subtitle { color: var(--color-text-secondary); font-size: 14px; margin-bottom: 12px; }
+
+.status-bar { display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; color: var(--color-text-secondary); }
+
+.status-indicator { display: flex; align-items: center; gap: 6px; }
+
+.setup-banner { background: rgb(254, 243, 199); border: 2px solid rgb(245, 158, 11); border-radius: 8px; padding: 16px; margin-bottom: 20px; }
+
+.setup-banner h3 { color: rgb(146, 64, 14); margin-bottom: 8px; }
+
+.setup-banner ol { margin-left: 20px; color: rgb(120, 53, 15); }
+
+.tabs { display: flex; gap: 8px; margin-bottom: 24px; border-bottom: 2px solid var(--color-border); overflow-x: auto; }
+
+.tab { background: none; border-top: none; border-right: none; border-left: none; border-image: initial; padding: 12px 20px; font-size: 16px; cursor: pointer; color: var(--color-text-secondary); border-bottom: 3px solid transparent; transition: 0.2s; white-space: nowrap; min-height: 44px; }
+
+.tab:hover { color: var(--color-primary); }
+
+.tab.active { color: var(--color-primary); border-bottom-color: var(--color-primary); font-weight: 600; }
+
+.tab-content { display: none; }
+
+.tab-content.active { display: block; }
+
+.alert-panel { margin-bottom: 24px; }
+
+.alert-box { border-radius: 8px; padding: 16px; margin-bottom: 12px; }
+
+.alert-box.danger { background: rgb(254, 226, 226); border: 2px solid var(--color-danger); }
+
+.alert-box.warning { background: rgb(254, 243, 199); border: 2px solid var(--color-warning); }
+
+.alert-box.success { background: rgb(220, 252, 231); border: 2px solid var(--color-success); }
+
+.alert-box h3 { margin-bottom: 12px; font-size: 16px; }
+
+.alert-box.danger h3 { color: rgb(153, 27, 27); }
+
+.alert-box.warning h3 { color: rgb(146, 64, 14); }
+
+.alert-box.success h3 { color: rgb(22, 101, 52); }
+
+.alert-item { padding: 8px; margin-bottom: 6px; background: rgba(255, 255, 255, 0.6); border-radius: 4px; font-size: 14px; }
+
+.controls { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+
+.controls select, .controls input { padding: 10px 14px; border: 1px solid var(--color-border); border-radius: 6px; font-size: 14px; background: var(--color-surface); min-height: 44px; }
+
+.controls input[type="text"] { flex: 1 1 0%; min-width: 200px; }
+
+.inventory-grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+
+.inventory-card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 8px; padding: 16px; box-shadow: rgba(0, 0, 0, 0.08) 0px 1px 3px; transition: box-shadow 0.2s; }
+
+.inventory-card:hover { box-shadow: rgba(0, 0, 0, 0.12) 0px 4px 12px; }
+
+.card-header { display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px; }
+
+.card-title { font-size: 18px; font-weight: 600; margin-bottom: 4px; }
+
+.badge { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+
+.badge.cat-meat { background: rgb(254, 226, 226); color: rgb(153, 27, 27); }
+
+.badge.cat-vegetables { background: rgb(220, 252, 231); color: rgb(22, 101, 52); }
+
+.badge.cat-dairy { background: rgb(254, 243, 199); color: rgb(146, 64, 14); }
+
+.badge.cat-cooked { background: rgb(221, 214, 254); color: rgb(91, 33, 182); }
+
+.badge.cat-frozen { background: rgb(219, 234, 254); color: rgb(30, 64, 175); }
+
+.badge.cat-beverages { background: rgb(252, 231, 243); color: rgb(131, 24, 67); }
+
+.badge.cat-condiments { background: rgb(255, 237, 213); color: rgb(154, 52, 18); }
+
+.badge.cat-other { background: rgb(243, 244, 246); color: rgb(55, 65, 81); }
+
+.badge.action-added { background: rgb(220, 252, 231); color: rgb(22, 101, 52); }
+
+.badge.action-used { background: rgb(219, 234, 254); color: rgb(30, 64, 175); }
+
+.badge.action-deleted { background: rgb(254, 226, 226); color: rgb(153, 27, 27); }
+
+.card-info { font-size: 14px; color: var(--color-text-secondary); margin-bottom: 8px; }
+
+.card-info strong { color: var(--color-text); }
+
+.days-until { display: inline-block; padding: 4px 8px; border-radius: 4px; font-weight: 600; font-size: 13px; }
+
+.days-until.expired { background: rgb(254, 226, 226); color: rgb(153, 27, 27); }
+
+.days-until.soon { background: rgb(254, 243, 199); color: rgb(146, 64, 14); }
+
+.days-until.ok { background: rgb(220, 252, 231); color: rgb(22, 101, 52); }
+
+.card-actions { display: flex; gap: 8px; margin-top: 12px; }
+
+.btn { padding: 10px 16px; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; transition: 0.2s; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+
+.btn:hover { transform: translateY(-1px); box-shadow: rgba(0, 0, 0, 0.15) 0px 4px 8px; }
+
+.btn:active { transform: translateY(0px); }
+
+.btn-primary { background: var(--color-primary); color: white; }
+
+.btn-success { background: var(--color-success); color: white; }
+
+.btn-danger { background: var(--color-danger); color: white; }
+
+.btn-secondary { background: rgb(226, 232, 240); color: var(--color-text); }
+
+.btn-small { padding: 8px 12px; font-size: 13px; flex: 1 1 0%; }
+
+.form-group { margin-bottom: 20px; }
+
+.form-group label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px; }
+
+.form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px 14px; border: 1px solid var(--color-border); border-radius: 6px; font-size: 14px; font-family: inherit; background: var(--color-surface); min-height: 44px; }
+
+.form-group textarea { resize: vertical; min-height: 80px; }
+
+.form-group .error { color: var(--color-danger); font-size: 13px; margin-top: 4px; }
+
+.form-actions { display: flex; gap: 12px; margin-top: 24px; }
+
+.form-actions .btn { flex: 1 1 0%; }
+
+.modal { display: none; position: fixed; inset: 0px; background: rgba(0, 0, 0, 0.5); z-index: 1000; align-items: center; justify-content: center; padding: 16px; }
+
+.modal.active { display: flex; }
+
+.modal-content { background: var(--color-surface); border-radius: 12px; padding: 24px; max-width: 500px; width: 100%; max-height: 90vh; overflow-y: auto; }
+
+.modal-header { font-size: 20px; font-weight: 600; margin-bottom: 16px; }
+
+.history-table { width: 100%; background: var(--color-surface); border-radius: 8px; overflow: hidden; box-shadow: rgba(0, 0, 0, 0.08) 0px 1px 3px; }
+
+.history-table table { width: 100%; border-collapse: collapse; }
+
+.history-table th { background: rgb(241, 245, 249); padding: 12px; text-align: left; font-weight: 600; font-size: 13px; color: var(--color-text-secondary); }
+
+.history-table td { padding: 12px; border-top: 1px solid var(--color-border); font-size: 14px; }
+
+.toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(100px); background: var(--color-success); color: white; padding: 14px 24px; border-radius: 8px; box-shadow: rgba(0, 0, 0, 0.2) 0px 4px 12px; font-weight: 600; z-index: 2000; opacity: 0; transition: 0.3s; }
+
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0px); }
+
+.loading { text-align: center; padding: 40px; color: var(--color-text-secondary); }
+
+.spinner { border-right-color: ; border-right-style: ; border-right-width: ; border-bottom-color: ; border-bottom-style: ; border-bottom-width: ; border-left-color: ; border-left-style: ; border-left-width: ; border-image-source: ; border-image-slice: ; border-image-width: ; border-image-outset: ; border-image-repeat: ; border-top: 3px solid var(--color-primary); border-radius: 50%; width: 40px; height: 40px; animation: 1s linear 0s infinite normal none running spin; margin: 0px auto 12px; }
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+footer { text-align: center; padding: 20px; color: var(--color-text-secondary); font-size: 14px; position: fixed; bottom: 0px; left: 0px; right: 0px; background: var(--color-surface); box-shadow: rgba(0, 0, 0, 0.08) 0px -2px 8px; }
+
+@media (max-width: 768px) {
+  .inventory-grid { grid-template-columns: 1fr; }
+  .controls { flex-direction: column; }
+  .controls select, .controls input { width: 100%; }
+  .history-table { overflow-x: auto; }
+  .history-table table { min-width: 600px; }
+  .form-actions { flex-direction: column; }
+}
+
+.hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>🧊 Fridge Manager</h1>
+            <div class="subtitle">Track your food · Reduce waste</div>
+            <div class="status-bar">
+                <div class="status-indicator">
+                    <span id="connectionStatus">🟢 Connected</span>
+                </div>
+                <div class="status-indicator">
+                    <span id="lastUpdated">Last updated: 25/02/2026 21:28</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <div id="setupBanner" class="setup-banner hidden">
+            <h3>🔧 Firebase Setup Required</h3>
+            <p><strong>Please configure Firebase to enable real-time sync:</strong></p>
+            <ol>
+                <li>Go to <a href="https://console.firebase.google.com/" target="_blank">Firebase Console</a> → Create a new project</li>
+                <li>Left menu → "Realtime Database" → "Create Database" → choose any region → start in <strong>Test Mode</strong></li>
+                <li>Project Settings (gear icon) → "Your apps" → click the Web icon &lt;/&gt; → register app → copy the <code>firebaseConfig</code> object</li>
+                <li>Replace the placeholder <code>firebaseConfig</code> in this HTML file's JavaScript section with your copied config</li>
+                <li>In Firebase Console → Realtime Database → Rules tab, paste:<br>
+                    <code>{ "rules": { ".read": true, ".write": true } }</code>
+                </li>
+            </ol>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" data-tab="inventory">📋 Inventory</button>
+            <button class="tab" data-tab="add">➕ Add Item</button>
+            <button class="tab" data-tab="history">📜 History</button>
+        </div>
+
+        <div id="inventoryTab" class="tab-content active">
+            <div class="alert-panel" id="alertPanel">
+                    <div class="alert-box success">
+                        <h3>✅ All items are within date</h3>
+                    </div>
+                </div>
+
+            <div class="controls">
+                <select id="sortBy">
+                    <option value="expiry">Expiry Date</option>
+                    <option value="name">Item Name A–Z</option>
+                    <option value="purchased">Date Purchased</option>
+                    <option value="category">Category</option>
+                </select>
+                <select id="filterCategory">
+                    <option value="all">All Categories</option>
+                    <option value="Meat &amp; Seafood">Meat &amp; Seafood</option>
+                    <option value="Vegetables &amp; Fruits">Vegetables &amp; Fruits</option>
+                    <option value="Dairy &amp; Eggs">Dairy &amp; Eggs</option>
+                    <option value="Cooked Food">Cooked Food</option>
+                    <option value="Frozen Food">Frozen Food</option>
+                    <option value="Beverages">Beverages</option>
+                    <option value="Condiments &amp; Sauces">Condiments &amp; Sauces</option>
+                    <option value="Other">Other</option>
+                </select>
+                <input type="text" id="searchInput" placeholder="Search items...">
+            </div>
+
+            <div id="inventoryList" class="inventory-grid"><div style="text-align: center; padding: 40px; color: var(--color-text-secondary);">No items found</div></div>
+        </div>
+
+        <div id="addTab" class="tab-content">
+            <form id="addItemForm">
+                <div class="form-group">
+                    <label>Item Name *</label>
+                    <input type="text" id="itemName" required="">
+                    <div class="error" id="itemNameError"></div>
+                </div>
+
+                <div class="form-group">
+                    <label>Category *</label>
+                    <select id="category" required="">
+                        <option value="">-- Select Category --</option>
+                        <option value="Meat &amp; Seafood">Meat &amp; Seafood</option>
+                        <option value="Vegetables &amp; Fruits">Vegetables &amp; Fruits</option>
+                        <option value="Dairy &amp; Eggs">Dairy &amp; Eggs</option>
+                        <option value="Cooked Food">Cooked Food</option>
+                        <option value="Frozen Food">Frozen Food</option>
+                        <option value="Beverages">Beverages</option>
+                        <option value="Condiments &amp; Sauces">Condiments &amp; Sauces</option>
+                        <option value="Other">Other</option>
+                    </select>
+                    <div class="error" id="categoryError"></div>
+                </div>
+
+                <div class="form-group">
+                    <label>Quantity *</label>
+                    <input type="number" id="quantity" min="0.01" step="0.01" required="">
+                    <div class="error" id="quantityError"></div>
+                </div>
+
+                <div class="form-group">
+                    <label>Unit *</label>
+                    <select id="unit" required="">
+                        <option value="pieces">pieces</option>
+                        <option value="grams">grams</option>
+                        <option value="kg">kg</option>
+                        <option value="packs">packs</option>
+                        <option value="bottles">bottles</option>
+                        <option value="bags">bags</option>
+                        <option value="boxes">boxes</option>
+                        <option value="portions">portions</option>
+                        <option value="cartons">cartons</option>
+                        <option value="other">Other (type below)</option>
+                    </select>
+                    <div class="error" id="unitError"></div>
+                </div>
+
+                <div class="form-group hidden" id="customUnitGroup">
+                    <label>Custom Unit *</label>
+                    <input type="text" id="customUnit">
+                </div>
+
+                <div class="form-group">
+                    <label>Date Purchased *</label>
+                    <input type="date" id="datePurchased" required="">
+                    <div class="error" id="datePurchasedError"></div>
+                </div>
+
+                <div class="form-group">
+                    <label>Expiry Date *</label>
+                    <input type="date" id="expiryDate" required="">
+                    <div class="error" id="expiryDateError"></div>
+                </div>
+
+                <div class="form-group">
+                    <label>Notes</label>
+                    <textarea id="notes"></textarea>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-success">✅ Add to Fridge</button>
+                    <button type="button" class="btn btn-secondary" id="clearFormBtn">🔄 Clear Form</button>
+                </div>
+            </form>
+        </div>
+
+        <div id="historyTab" class="tab-content">
+            <div class="controls">
+                <select id="historyFilter">
+                    <option value="all">All Actions</option>
+                    <option value="added">Added</option>
+                    <option value="used">Used / Taken Out</option>
+                    <option value="deleted">Deleted</option>
+                </select>
+            </div>
+
+            <div class="history-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>Action</th>
+                            <th>Item Name</th>
+                            <th>Quantity</th>
+                            <th>Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyBody"><tr><td colspan="5" style="text-align: center; padding: 40px;">No history records</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="useModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">Use / Take Out Item</div>
+            <form id="useItemForm">
+                <div class="form-group">
+                    <strong id="useItemName"></strong>
+                    <div style="margin-top: 8px; color: var(--color-text-secondary);" id="useCurrentQty"></div>
+                </div>
+
+                <div class="form-group">
+                    <label>Quantity Used *</label>
+                    <input type="number" id="useQuantity" min="0.01" step="0.01" required="">
+                    <div class="error" id="useQuantityError"></div>
+                </div>
+
+                <div class="form-group">
+                    <label>Unit</label>
+                    <input type="text" id="useUnit" readonly="">
+                </div>
+
+                <div class="form-group">
+                    <label>Date Taken Out *</label>
+                    <input type="date" id="useDateTakenOut" required="">
+                </div>
+
+                <div class="form-group">
+                    <label>Notes</label>
+                    <textarea id="useNotes"></textarea>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-success">✅ Confirm Take Out</button>
+                    <button type="button" class="btn btn-secondary" id="cancelUseBtn">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <footer>
+        Fridge Manager — Keep track, reduce waste
+    </footer>
+
+</body>
+</html>
