@@ -1,0 +1,1037 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🧊 Fridge Manager</title>
+  <style>
+    @charset "utf-8";
+
+    :root {
+      --color-primary: #38bdf8;
+      --color-success: #22c55e;
+      --color-warning: #f59e0b;
+      --color-danger: #ef4444;
+      --color-bg: #f0f9ff;
+      --color-surface: #ffffff;
+      --color-text: #1e293b;
+      --color-text-secondary: #64748b;
+      --color-border: #e2e8f0;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: var(--color-bg);
+      color: var(--color-text);
+      line-height: 1.6;
+      padding-bottom: 80px;
+    }
+
+    .container { max-width: 1200px; margin: 0 auto; padding: 16px; }
+
+    header {
+      background: var(--color-surface);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      padding: 20px 0;
+      margin-bottom: 24px;
+    }
+
+    h1 { font-size: 28px; color: var(--color-primary); margin-bottom: 4px; }
+
+    .subtitle { color: var(--color-text-secondary); font-size: 14px; margin-bottom: 12px; }
+
+    .status-bar { display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; color: var(--color-text-secondary); }
+
+    .status-indicator { display: flex; align-items: center; gap: 6px; }
+
+    /* Setup Banner */
+    .setup-banner {
+      background: #fef3c7;
+      border: 2px solid #f59e0b;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+    .setup-banner h3 { color: #92400e; margin-bottom: 8px; }
+    .setup-banner ol { margin-left: 20px; color: #78350f; line-height: 1.9; }
+    .setup-banner code {
+      background: rgba(0,0,0,0.08);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 13px;
+      font-family: monospace;
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 24px;
+      border-bottom: 2px solid var(--color-border);
+      overflow-x: auto;
+    }
+
+    .tab {
+      background: none;
+      border: none;
+      border-bottom: 3px solid transparent;
+      padding: 12px 20px;
+      font-size: 16px;
+      cursor: pointer;
+      color: var(--color-text-secondary);
+      transition: 0.2s;
+      white-space: nowrap;
+      min-height: 44px;
+    }
+    .tab:hover { color: var(--color-primary); }
+    .tab.active { color: var(--color-primary); border-bottom-color: var(--color-primary); font-weight: 600; }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* Alert Panel */
+    .alert-panel { margin-bottom: 24px; }
+    .alert-box { border-radius: 8px; padding: 16px; margin-bottom: 12px; }
+    .alert-box.danger { background: #fee2e2; border: 2px solid var(--color-danger); }
+    .alert-box.warning { background: #fef3c7; border: 2px solid var(--color-warning); }
+    .alert-box.success { background: #dcfce7; border: 2px solid var(--color-success); }
+    .alert-box h3 { margin-bottom: 12px; font-size: 16px; }
+    .alert-box.danger h3 { color: #991b1b; }
+    .alert-box.warning h3 { color: #92400e; }
+    .alert-box.success h3 { color: #166534; }
+    .alert-item {
+      padding: 8px;
+      margin-bottom: 6px;
+      background: rgba(255,255,255,0.6);
+      border-radius: 4px;
+      font-size: 14px;
+    }
+
+    /* Controls */
+    .controls { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+    .controls select, .controls input {
+      padding: 10px 14px;
+      border: 1px solid var(--color-border);
+      border-radius: 6px;
+      font-size: 14px;
+      background: var(--color-surface);
+      min-height: 44px;
+    }
+    .controls input[type="text"] { flex: 1 1 0; min-width: 200px; }
+
+    /* Inventory Grid */
+    .inventory-grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+
+    .inventory-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: 8px;
+      padding: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      transition: box-shadow 0.2s;
+    }
+    .inventory-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.12); }
+    .inventory-card.expired-card { border-color: var(--color-danger); border-width: 2px; }
+    .inventory-card.expiring-card { border-color: var(--color-warning); border-width: 2px; }
+
+    .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+    .card-title { font-size: 18px; font-weight: 600; margin-bottom: 4px; }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .badge.cat-meat { background: #fee2e2; color: #991b1b; }
+    .badge.cat-vegetables { background: #dcfce7; color: #166534; }
+    .badge.cat-dairy { background: #fef3c7; color: #92400e; }
+    .badge.cat-cooked { background: #ede9fe; color: #5b21b6; }
+    .badge.cat-frozen { background: #dbeafe; color: #1e40af; }
+    .badge.cat-beverages { background: #fce7f3; color: #831843; }
+    .badge.cat-condiments { background: #ffedd5; color: #9a3412; }
+    .badge.cat-other { background: #f3f4f6; color: #374151; }
+    .badge.action-added { background: #dcfce7; color: #166534; }
+    .badge.action-used { background: #dbeafe; color: #1e40af; }
+    .badge.action-deleted { background: #fee2e2; color: #991b1b; }
+
+    .card-info { font-size: 14px; color: var(--color-text-secondary); margin-bottom: 8px; }
+    .card-info strong { color: var(--color-text); }
+
+    .days-until {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-weight: 600;
+      font-size: 13px;
+    }
+    .days-until.expired { background: #fee2e2; color: #991b1b; }
+    .days-until.soon { background: #fef3c7; color: #92400e; }
+    .days-until.ok { background: #dcfce7; color: #166534; }
+
+    .card-actions { display: flex; gap: 8px; margin-top: 12px; }
+
+    /* Buttons */
+    .btn {
+      padding: 10px 16px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.2s;
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
+    .btn:active { transform: translateY(0); }
+    .btn-primary { background: var(--color-primary); color: white; }
+    .btn-success { background: var(--color-success); color: white; }
+    .btn-danger { background: var(--color-danger); color: white; }
+    .btn-secondary { background: #e2e8f0; color: var(--color-text); }
+    .btn-small { padding: 8px 12px; font-size: 13px; flex: 1; }
+
+    /* Forms */
+    .form-group { margin-bottom: 20px; }
+    .form-group label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px; }
+    .form-group input, .form-group select, .form-group textarea {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid var(--color-border);
+      border-radius: 6px;
+      font-size: 14px;
+      font-family: inherit;
+      background: var(--color-surface);
+      min-height: 44px;
+    }
+    .form-group textarea { resize: vertical; min-height: 80px; }
+    .form-group .error { color: var(--color-danger); font-size: 13px; margin-top: 4px; }
+    .form-actions { display: flex; gap: 12px; margin-top: 24px; }
+    .form-actions .btn { flex: 1; }
+
+    /* Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .modal.active { display: flex; }
+    .modal-content {
+      background: var(--color-surface);
+      border-radius: 12px;
+      padding: 24px;
+      max-width: 500px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    .modal-header { font-size: 20px; font-weight: 600; margin-bottom: 16px; }
+
+    /* History Table */
+    .history-table {
+      width: 100%;
+      background: var(--color-surface);
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    .history-table table { width: 100%; border-collapse: collapse; }
+    .history-table th {
+      background: #f1f5f9;
+      padding: 12px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 13px;
+      color: var(--color-text-secondary);
+    }
+    .history-table td { padding: 12px; border-top: 1px solid var(--color-border); font-size: 14px; }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: var(--color-success);
+      color: white;
+      padding: 14px 24px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      font-weight: 600;
+      z-index: 2000;
+      opacity: 0;
+      transition: 0.3s;
+      max-width: 90vw;
+      text-align: center;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .toast.error { background: var(--color-danger); }
+
+    /* Loading */
+    .loading { text-align: center; padding: 40px; color: var(--color-text-secondary); }
+    .spinner {
+      border: 3px solid #e2e8f0;
+      border-top: 3px solid var(--color-primary);
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 12px;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    footer {
+      text-align: center;
+      padding: 20px;
+      color: var(--color-text-secondary);
+      font-size: 14px;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--color-surface);
+      box-shadow: 0 -2px 8px rgba(0,0,0,0.08);
+    }
+
+    .hidden { display: none !important; }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px;
+      color: var(--color-text-secondary);
+    }
+    .empty-state .empty-icon { font-size: 48px; margin-bottom: 12px; }
+
+    @media (max-width: 768px) {
+      .inventory-grid { grid-template-columns: 1fr; }
+      .controls { flex-direction: column; }
+      .controls select, .controls input { width: 100%; }
+      .history-table { overflow-x: auto; }
+      .history-table table { min-width: 600px; }
+      .form-actions { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="container">
+      <h1>🧊 Fridge Manager</h1>
+      <div class="subtitle">Track your food · Reduce waste · 追蹤食物 · 減少浪費</div>
+      <div class="status-bar">
+        <div class="status-indicator">
+          <span id="connectionStatus">⏳ Connecting...</span>
+        </div>
+        <div class="status-indicator">
+          <span id="lastUpdated"></span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="container">
+
+    <!-- Firebase Setup Banner -->
+    <div id="setupBanner" class="setup-banner hidden">
+      <h3>🔧 One-Time Firebase Setup Required</h3>
+      <p style="margin-bottom:10px;"><strong>Follow these steps to enable real-time sync across all devices:</strong></p>
+      <ol>
+        <li>Go to <a href="https://console.firebase.google.com/" target="_blank" style="color:#92400e;">console.firebase.google.com</a> → Create a new project (e.g. "FridgeManager")</li>
+        <li>In the left menu → <strong>Build → Realtime Database</strong> → <strong>Create Database</strong> → choose any region → select <strong>Start in Test Mode</strong></li>
+        <li>Click the ⚙️ gear icon → <strong>Project Settings</strong> → scroll to <strong>"Your apps"</strong> → click the <strong>&lt;/&gt; Web</strong> icon → register app → copy the <code>firebaseConfig</code> object shown</li>
+        <li>Open this HTML file in a text editor → find the comment <code>// PASTE YOUR FIREBASE CONFIG HERE</code> → replace the placeholder config object with your copied one → save and re-upload to GitHub</li>
+        <li>Back in Firebase Console → Realtime Database → <strong>Rules</strong> tab → paste the following and click Publish:<br>
+          <code>{ "rules": { ".read": true, ".write": true } }</code>
+        </li>
+      </ol>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab active" data-tab="inventory">📋 Inventory</button>
+      <button class="tab" data-tab="add">➕ Add Item</button>
+      <button class="tab" data-tab="history">📜 History</button>
+    </div>
+
+    <!-- INVENTORY TAB -->
+    <div id="inventoryTab" class="tab-content active">
+
+      <div class="alert-panel" id="alertPanel"></div>
+
+      <div class="controls">
+        <select id="sortBy">
+          <option value="expiry">Sort by Expiry Date</option>
+          <option value="name">Sort by Name A–Z</option>
+          <option value="purchased">Sort by Date Purchased</option>
+          <option value="category">Sort by Category</option>
+        </select>
+        <select id="filterCategory">
+          <option value="all">All Categories</option>
+          <option value="Meat &amp; Seafood">Meat &amp; Seafood</option>
+          <option value="Vegetables &amp; Fruits">Vegetables &amp; Fruits</option>
+          <option value="Dairy &amp; Eggs">Dairy &amp; Eggs</option>
+          <option value="Cooked Food">Cooked Food</option>
+          <option value="Frozen Food">Frozen Food</option>
+          <option value="Beverages">Beverages</option>
+          <option value="Condiments &amp; Sauces">Condiments &amp; Sauces</option>
+          <option value="Other">Other</option>
+        </select>
+        <input type="text" id="searchInput" placeholder="Search items... (supports Chinese 中文)">
+      </div>
+
+      <div id="inventoryList" class="inventory-grid">
+        <div class="loading"><div class="spinner"></div>Loading...</div>
+      </div>
+    </div>
+
+    <!-- ADD ITEM TAB -->
+    <div id="addTab" class="tab-content">
+      <form id="addItemForm" autocomplete="off">
+
+        <div class="form-group">
+          <label for="itemName">Item Name * (English or 中文)</label>
+          <input type="text" id="itemName" placeholder="e.g. Chicken Breast / 雞胸肉" required>
+          <div class="error" id="itemNameError"></div>
+        </div>
+
+        <div class="form-group">
+          <label for="category">Category *</label>
+          <select id="category" required>
+            <option value="">-- Select Category --</option>
+            <option value="Meat &amp; Seafood">Meat &amp; Seafood</option>
+            <option value="Vegetables &amp; Fruits">Vegetables &amp; Fruits</option>
+            <option value="Dairy &amp; Eggs">Dairy &amp; Eggs</option>
+            <option value="Cooked Food">Cooked Food</option>
+            <option value="Frozen Food">Frozen Food</option>
+            <option value="Beverages">Beverages</option>
+            <option value="Condiments &amp; Sauces">Condiments &amp; Sauces</option>
+            <option value="Other">Other</option>
+          </select>
+          <div class="error" id="categoryError"></div>
+        </div>
+
+        <div class="form-group">
+          <label for="quantity">Quantity *</label>
+          <input type="number" id="quantity" min="0.01" step="0.01" placeholder="e.g. 2" required>
+          <div class="error" id="quantityError"></div>
+        </div>
+
+        <div class="form-group">
+          <label for="unit">Unit *</label>
+          <select id="unit" required>
+            <option value="pieces">pieces</option>
+            <option value="grams">grams</option>
+            <option value="kg">kg</option>
+            <option value="packs">packs</option>
+            <option value="bottles">bottles</option>
+            <option value="bags">bags</option>
+            <option value="boxes">boxes</option>
+            <option value="portions">portions</option>
+            <option value="cartons">cartons</option>
+            <option value="other">Other (type below)</option>
+          </select>
+        </div>
+
+        <div class="form-group hidden" id="customUnitGroup">
+          <label for="customUnit">Custom Unit *</label>
+          <input type="text" id="customUnit" placeholder="e.g. trays">
+        </div>
+
+        <div class="form-group">
+          <label for="datePurchased">Date Purchased *</label>
+          <input type="date" id="datePurchased" required>
+          <div class="error" id="datePurchasedError"></div>
+        </div>
+
+        <div class="form-group">
+          <label for="expiryDate">Expiry Date *</label>
+          <input type="date" id="expiryDate" required>
+          <div class="error" id="expiryDateError"></div>
+        </div>
+
+        <div class="form-group">
+          <label for="notes">Notes (optional)</label>
+          <textarea id="notes" placeholder="e.g. From ParknShop, bottom shelf / 百佳買的，放下格"></textarea>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn btn-success">✅ Add to Fridge</button>
+          <button type="button" class="btn btn-secondary" id="clearFormBtn">🔄 Clear Form</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- HISTORY TAB -->
+    <div id="historyTab" class="tab-content">
+      <div class="controls">
+        <select id="historyFilter">
+          <option value="all">All Actions</option>
+          <option value="added">Added</option>
+          <option value="used">Used / Taken Out</option>
+          <option value="deleted">Deleted</option>
+        </select>
+      </div>
+
+      <div class="history-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Timestamp</th>
+              <th>Action</th>
+              <th>Item Name</th>
+              <th>Qty / Unit</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody id="historyBody">
+            <tr><td colspan="5" class="empty-state">Loading history...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div><!-- end .container -->
+
+  <!-- Use / Take Out Modal -->
+  <div id="useModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">🍽️ Use / Take Out Item</div>
+      <form id="useItemForm">
+        <div class="form-group">
+          <strong id="useItemName" style="font-size:16px;"></strong>
+          <div style="margin-top:8px; color:var(--color-text-secondary);" id="useCurrentQty"></div>
+        </div>
+        <div class="form-group">
+          <label for="useQuantity">Quantity Used *</label>
+          <input type="number" id="useQuantity" min="0.01" step="0.01" required>
+          <div class="error" id="useQuantityError"></div>
+        </div>
+        <div class="form-group">
+          <label>Unit</label>
+          <input type="text" id="useUnit" readonly style="background:#f8fafc;">
+        </div>
+        <div class="form-group">
+          <label for="useDateTakenOut">Date Taken Out *</label>
+          <input type="date" id="useDateTakenOut" required>
+        </div>
+        <div class="form-group">
+          <label for="useNotes">Notes (optional)</label>
+          <textarea id="useNotes" placeholder="e.g. Used for dinner / 晚飯用了"></textarea>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-success">✅ Confirm Take Out</button>
+          <button type="button" class="btn btn-secondary" id="cancelUseBtn">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <footer>
+    🧊 Fridge Manager — Keep track, reduce waste · 追蹤食物，減少浪費
+  </footer>
+
+  <!-- Firebase SDK (v9 compat mode — works in plain HTML without a build step) -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+  <script>
+    // ============================================================
+    //  FIREBASE CONFIG - Ready to use!
+    //  This configuration is linked to your Firebase project
+    // ============================================================
+    const firebaseConfig = {
+      apiKey: "AIzaSyCyg-f7MwqLDGPv9mLnZyyJ6DNILRltxb8",
+      authDomain: "fridge-manager-72c07.firebaseapp.com",
+      databaseURL: "https://fridge-manager-72c07-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "fridge-manager-72c07",
+      storageBucket: "fridge-manager-72c07.firebasestorage.app",
+      messagingSenderId: "27502986548",
+      appId: "1:27502986548:web:aa0d19b428b5ebd2b99161",
+      measurementId: "G-ZM2DK1YJPQ"
+    };
+    // ============================================================
+
+    // ── Detect placeholder config ──────────────────────────────
+    const isConfigured = firebaseConfig.apiKey !== "YOUR_API_KEY";
+
+    // ── Firebase init ──────────────────────────────────────────
+    let db = null;
+    let inventoryRef = null;
+    let historyRef = null;
+
+    if (isConfigured) {
+      firebase.initializeApp(firebaseConfig);
+      db = firebase.database();
+      inventoryRef = db.ref("inventory");
+      historyRef   = db.ref("history");
+    }
+
+    // ── App state ──────────────────────────────────────────────
+    let inventoryItems = {};   // keyed by Firebase push-key
+    let historyItems   = [];   // array of history records
+
+    // ── DOM refs ──────────────────────────────────────────────
+    const connectionStatusEl = document.getElementById("connectionStatus");
+    const lastUpdatedEl      = document.getElementById("lastUpdated");
+    const setupBanner        = document.getElementById("setupBanner");
+    const alertPanel         = document.getElementById("alertPanel");
+    const inventoryListEl    = document.getElementById("inventoryList");
+    const historyBodyEl      = document.getElementById("historyBody");
+    const toastEl            = document.getElementById("toast");
+    const useModal           = document.getElementById("useModal");
+
+    // ── Utility helpers ────────────────────────────────────────
+    function today() {
+      return new Date().toISOString().split("T")[0];
+    }
+
+    function formatDate(dateStr) {
+      if (!dateStr) return "—";
+      const [y, m, d] = dateStr.split("-");
+      return `${d}/${m}/${y}`;
+    }
+
+    function daysUntilExpiry(expiryDateStr) {
+      const now    = new Date(); now.setHours(0,0,0,0);
+      const expiry = new Date(expiryDateStr); expiry.setHours(0,0,0,0);
+      return Math.round((expiry - now) / 86400000);
+    }
+
+    function categoryClass(cat) {
+      const map = {
+        "Meat & Seafood": "cat-meat",
+        "Vegetables & Fruits": "cat-vegetables",
+        "Dairy & Eggs": "cat-dairy",
+        "Cooked Food": "cat-cooked",
+        "Frozen Food": "cat-frozen",
+        "Beverages": "cat-beverages",
+        "Condiments & Sauces": "cat-condiments",
+        "Other": "cat-other"
+      };
+      return map[cat] || "cat-other";
+    }
+
+    function showToast(msg, isError = false) {
+      toastEl.textContent = msg;
+      toastEl.className = "toast" + (isError ? " error" : "");
+      toastEl.classList.add("show");
+      setTimeout(() => toastEl.classList.remove("show"), 3000);
+    }
+
+    function nowTimestamp() {
+      return new Date().toLocaleString("en-GB", {
+        day: "2-digit", month: "2-digit", year: "numeric",
+        hour: "2-digit", minute: "2-digit", second: "2-digit"
+      });
+    }
+
+    // ── Tab switching ──────────────────────────────────────────
+    document.querySelectorAll(".tab").forEach(tab => {
+      tab.addEventListener("click", () => {
+        document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+        document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+        tab.classList.add("active");
+        const targetId = tab.dataset.tab + "Tab";
+        document.getElementById(targetId).classList.add("active");
+        if (tab.dataset.tab === "history") renderHistory();
+      });
+    });
+
+    // ── Render alerts ──────────────────────────────────────────
+    function renderAlerts() {
+      const items = Object.values(inventoryItems);
+      const expired  = items.filter(i => daysUntilExpiry(i.expiryDate) < 0);
+      const expiring = items.filter(i => { const d = daysUntilExpiry(i.expiryDate); return d >= 0 && d <= 3; });
+      const ok       = items.filter(i => daysUntilExpiry(i.expiryDate) > 3);
+
+      let html = "";
+
+      if (expired.length) {
+        html += `<div class="alert-box danger">
+          <h3>🚨 Expired — Please Discard (${expired.length} item${expired.length>1?"s":""})</h3>
+          ${expired.map(i => `<div class="alert-item">
+            <strong>${escHtml(i.name)}</strong> — ${i.quantity} ${escHtml(i.unit)} 
+            (expired ${Math.abs(daysUntilExpiry(i.expiryDate))} day${Math.abs(daysUntilExpiry(i.expiryDate))!==1?"s":""} ago, on ${formatDate(i.expiryDate)})
+          </div>`).join("")}
+        </div>`;
+      }
+
+      if (expiring.length) {
+        html += `<div class="alert-box warning">
+          <h3>⚠️ Expiring Soon — Eat First! (${expiring.length} item${expiring.length>1?"s":""})</h3>
+          ${expiring.map(i => {
+            const d = daysUntilExpiry(i.expiryDate);
+            const label = d === 0 ? "expires TODAY" : `expires in ${d} day${d!==1?"s":""}`;
+            return `<div class="alert-item">
+              <strong>${escHtml(i.name)}</strong> — ${i.quantity} ${escHtml(i.unit)} (${label}, on ${formatDate(i.expiryDate)})
+            </div>`;
+          }).join("")}
+        </div>`;
+      }
+
+      if (!expired.length && !expiring.length) {
+        if (items.length === 0) {
+          html = `<div class="alert-box success"><h3>🧊 Fridge is empty — add some items!</h3></div>`;
+        } else {
+          html = `<div class="alert-box success"><h3>✅ All ${ok.length} item${ok.length!==1?"s":""} are fresh — nothing expiring in the next 3 days.</h3></div>`;
+        }
+      }
+
+      alertPanel.innerHTML = html;
+    }
+
+    // ── Render inventory ───────────────────────────────────────
+    function renderInventory() {
+      const sortBy   = document.getElementById("sortBy").value;
+      const filterCat = document.getElementById("filterCategory").value;
+      const search   = document.getElementById("searchInput").value.toLowerCase().trim();
+
+      let items = Object.entries(inventoryItems).map(([key, val]) => ({ key, ...val }));
+
+      // Filter
+      if (filterCat !== "all") items = items.filter(i => i.category === filterCat);
+      if (search) items = items.filter(i =>
+        i.name.toLowerCase().includes(search) ||
+        (i.notes || "").toLowerCase().includes(search) ||
+        i.category.toLowerCase().includes(search)
+      );
+
+      // Sort
+      items.sort((a, b) => {
+        if (sortBy === "expiry")    return a.expiryDate.localeCompare(b.expiryDate);
+        if (sortBy === "name")      return a.name.localeCompare(b.name);
+        if (sortBy === "purchased") return b.datePurchased.localeCompare(a.datePurchased);
+        if (sortBy === "category")  return a.category.localeCompare(b.category);
+        return 0;
+      });
+
+      if (items.length === 0) {
+        inventoryListEl.innerHTML = `<div class="empty-state"><div class="empty-icon">🧊</div><p>No items found. Try changing filters or add a new item.</p></div>`;
+        return;
+      }
+
+      inventoryListEl.innerHTML = items.map(item => {
+        const days = daysUntilExpiry(item.expiryDate);
+        let daysLabel, daysClass;
+        if (days < 0) {
+          daysLabel = `Expired ${Math.abs(days)}d ago`;
+          daysClass = "expired";
+        } else if (days === 0) {
+          daysLabel = "Expires TODAY";
+          daysClass = "soon";
+        } else if (days <= 3) {
+          daysLabel = `Expires in ${days}d`;
+          daysClass = "soon";
+        } else {
+          daysLabel = `${days} days left`;
+          daysClass = "ok";
+        }
+
+        const cardClass = days < 0 ? "expired-card" : days <= 3 ? "expiring-card" : "";
+
+        return `<div class="inventory-card ${cardClass}">
+          <div class="card-header">
+            <div>
+              <div class="card-title">${escHtml(item.name)}</div>
+              <span class="badge ${categoryClass(item.category)}">${escHtml(item.category)}</span>
+            </div>
+            <span class="days-until ${daysClass}">${daysLabel}</span>
+          </div>
+          <div class="card-info">
+            <strong>Qty:</strong> ${item.quantity} ${escHtml(item.unit)}
+          </div>
+          <div class="card-info">
+            <strong>Purchased:</strong> ${formatDate(item.datePurchased)}
+          </div>
+          <div class="card-info">
+            <strong>Expires:</strong> ${formatDate(item.expiryDate)}
+          </div>
+          ${item.notes ? `<div class="card-info"><strong>Notes:</strong> ${escHtml(item.notes)}</div>` : ""}
+          <div class="card-actions">
+            <button class="btn btn-primary btn-small" onclick="openUseModal('${item.key}')">🍽️ Use</button>
+            <button class="btn btn-danger btn-small" onclick="deleteItem('${item.key}')">🗑️ Delete</button>
+          </div>
+        </div>`;
+      }).join("");
+    }
+
+    // ── Render history ─────────────────────────────────────────
+    function renderHistory() {
+      const filter = document.getElementById("historyFilter").value;
+      let records = [...historyItems];
+      if (filter !== "all") records = records.filter(r => r.action === filter);
+      records.sort((a, b) => (b.timestamp || "").localeCompare(a.timestamp || ""));
+
+      if (records.length === 0) {
+        historyBodyEl.innerHTML = `<tr><td colspan="5" class="empty-state">No history records yet.</td></tr>`;
+        return;
+      }
+
+      historyBodyEl.innerHTML = records.map(r => `
+        <tr>
+          <td>${escHtml(r.timestamp || "")}</td>
+          <td><span class="badge action-${r.action}">${r.action === "added" ? "➕ Added" : r.action === "used" ? "🍽️ Used" : "🗑️ Deleted"}</span></td>
+          <td>${escHtml(r.name || "")}</td>
+          <td>${r.quantity != null ? r.quantity + " " + escHtml(r.unit || "") : "—"}</td>
+          <td>${escHtml(r.notes || "")}</td>
+        </tr>
+      `).join("");
+    }
+
+    // ── Escape HTML to prevent XSS ─────────────────────────────
+    function escHtml(str) {
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    // ── Add item form ──────────────────────────────────────────
+    document.getElementById("unit").addEventListener("change", function () {
+      const customGroup = document.getElementById("customUnitGroup");
+      if (this.value === "other") {
+        customGroup.classList.remove("hidden");
+        document.getElementById("customUnit").required = true;
+      } else {
+        customGroup.classList.add("hidden");
+        document.getElementById("customUnit").required = false;
+      }
+    });
+
+    // Pre-fill today's date
+    document.getElementById("datePurchased").value = today();
+
+    document.getElementById("addItemForm").addEventListener("submit", async function (e) {
+      e.preventDefault();
+
+      // Clear errors
+      ["itemName","category","quantity","datePurchased","expiryDate"].forEach(id => {
+        document.getElementById(id + "Error").textContent = "";
+      });
+
+      const name         = document.getElementById("itemName").value.trim();
+      const category     = document.getElementById("category").value;
+      const quantity     = parseFloat(document.getElementById("quantity").value);
+      const unitSelect   = document.getElementById("unit").value;
+      const unit         = unitSelect === "other" ? document.getElementById("customUnit").value.trim() : unitSelect;
+      const datePurchased = document.getElementById("datePurchased").value;
+      const expiryDate   = document.getElementById("expiryDate").value;
+      const notes        = document.getElementById("notes").value.trim();
+
+      let valid = true;
+      if (!name)          { document.getElementById("itemNameError").textContent = "Item name is required."; valid = false; }
+      if (!category)      { document.getElementById("categoryError").textContent = "Please select a category."; valid = false; }
+      if (!quantity || quantity <= 0) { document.getElementById("quantityError").textContent = "Enter a valid quantity."; valid = false; }
+      if (!datePurchased) { document.getElementById("datePurchasedError").textContent = "Purchase date is required."; valid = false; }
+      if (!expiryDate)    { document.getElementById("expiryDateError").textContent = "Expiry date is required."; valid = false; }
+      if (expiryDate && datePurchased && expiryDate < datePurchased) {
+        document.getElementById("expiryDateError").textContent = "Expiry date cannot be before purchase date.";
+        valid = false;
+      }
+      if (!valid) return;
+
+      const newItem = { name, category, quantity, unit, datePurchased, expiryDate, notes, addedAt: nowTimestamp() };
+
+      if (!isConfigured || !inventoryRef) {
+        showToast("⚠️ Firebase not configured — data not saved.", true);
+        return;
+      }
+
+      try {
+        const pushRef = await inventoryRef.push(newItem);
+        // Log history
+        await historyRef.push({
+          action: "added",
+          name,
+          quantity,
+          unit,
+          notes: notes || "",
+          timestamp: nowTimestamp(),
+          itemKey: pushRef.key
+        });
+        showToast("✅ " + name + " added to fridge!");
+        document.getElementById("addItemForm").reset();
+        document.getElementById("datePurchased").value = today();
+        document.getElementById("customUnitGroup").classList.add("hidden");
+        // Switch to inventory tab
+        document.querySelector('[data-tab="inventory"]').click();
+      } catch (err) {
+        showToast("❌ Error saving item: " + err.message, true);
+      }
+    });
+
+    document.getElementById("clearFormBtn").addEventListener("click", () => {
+      document.getElementById("addItemForm").reset();
+      document.getElementById("datePurchased").value = today();
+      document.getElementById("customUnitGroup").classList.add("hidden");
+      ["itemName","category","quantity","datePurchased","expiryDate"].forEach(id => {
+        document.getElementById(id + "Error").textContent = "";
+      });
+    });
+
+    // ── Delete item ────────────────────────────────────────────
+    async function deleteItem(key) {
+      const item = inventoryItems[key];
+      if (!item) return;
+      if (!confirm(`Delete "${item.name}" from the fridge?`)) return;
+
+      try {
+        await inventoryRef.child(key).remove();
+        await historyRef.push({
+          action: "deleted",
+          name: item.name,
+          quantity: item.quantity,
+          unit: item.unit,
+          notes: "",
+          timestamp: nowTimestamp(),
+          itemKey: key
+        });
+        showToast("🗑️ " + item.name + " deleted.");
+      } catch (err) {
+        showToast("❌ Error deleting: " + err.message, true);
+      }
+    }
+
+    // ── Use / Take Out Modal ───────────────────────────────────
+    let currentUseKey = null;
+
+    function openUseModal(key) {
+      const item = inventoryItems[key];
+      if (!item) return;
+      currentUseKey = key;
+      document.getElementById("useItemName").textContent = item.name;
+      document.getElementById("useCurrentQty").textContent = `Current stock: ${item.quantity} ${item.unit}`;
+      document.getElementById("useQuantity").value = "";
+      document.getElementById("useQuantity").max = item.quantity;
+      document.getElementById("useUnit").value = item.unit;
+      document.getElementById("useDateTakenOut").value = today();
+      document.getElementById("useNotes").value = "";
+      document.getElementById("useQuantityError").textContent = "";
+      useModal.classList.add("active");
+    }
+
+    document.getElementById("cancelUseBtn").addEventListener("click", () => {
+      useModal.classList.remove("active");
+      currentUseKey = null;
+    });
+
+    useModal.addEventListener("click", (e) => {
+      if (e.target === useModal) {
+        useModal.classList.remove("active");
+        currentUseKey = null;
+      }
+    });
+
+    document.getElementById("useItemForm").addEventListener("submit", async function (e) {
+      e.preventDefault();
+      if (!currentUseKey) return;
+
+      const item = inventoryItems[currentUseKey];
+      if (!item) return;
+
+      const used  = parseFloat(document.getElementById("useQuantity").value);
+      const notes = document.getElementById("useNotes").value.trim();
+      const dateTakenOut = document.getElementById("useDateTakenOut").value;
+      document.getElementById("useQuantityError").textContent = "";
+
+      if (!used || used <= 0) {
+        document.getElementById("useQuantityError").textContent = "Enter a valid quantity.";
+        return;
+      }
+      if (used > item.quantity) {
+        document.getElementById("useQuantityError").textContent = `Cannot exceed current stock (${item.quantity} ${item.unit}).`;
+        return;
+      }
+
+      try {
+        const remaining = Math.round((item.quantity - used) * 1000) / 1000;
+        if (remaining <= 0) {
+          await inventoryRef.child(currentUseKey).remove();
+        } else {
+          await inventoryRef.child(currentUseKey).update({ quantity: remaining });
+        }
+
+        await historyRef.push({
+          action: "used",
+          name: item.name,
+          quantity: used,
+          unit: item.unit,
+          notes: notes + (dateTakenOut ? ` (taken out: ${formatDate(dateTakenOut)})` : ""),
+          timestamp: nowTimestamp(),
+          itemKey: currentUseKey
+        });
+
+        showToast(`🍽️ ${used} ${item.unit} of ${item.name} taken out.`);
+        useModal.classList.remove("active");
+        currentUseKey = null;
+      } catch (err) {
+        showToast("❌ Error updating: " + err.message, true);
+      }
+    });
+
+    // ── History filter ─────────────────────────────────────────
+    document.getElementById("historyFilter").addEventListener("change", renderHistory);
+
+    // ── Sort / filter / search controls ───────────────────────
+    document.getElementById("sortBy").addEventListener("change", renderInventory);
+    document.getElementById("filterCategory").addEventListener("change", renderInventory);
+    document.getElementById("searchInput").addEventListener("input", renderInventory);
+
+    // ── Firebase real-time listeners ───────────────────────────
+    function initFirebaseListeners() {
+      // Inventory
+      inventoryRef.on("value", snapshot => {
+        inventoryItems = snapshot.val() || {};
+        renderAlerts();
+        renderInventory();
+        lastUpdatedEl.textContent = "Last updated: " + nowTimestamp();
+      }, err => {
+        connectionStatusEl.textContent = "🔴 Error: " + err.message;
+        showToast("Firebase error: " + err.message, true);
+      });
+
+      // History
+      historyRef.on("value", snapshot => {
+        const data = snapshot.val() || {};
+        historyItems = Object.values(data);
+        // Re-render only if history tab is active
+        if (document.getElementById("historyTab").classList.contains("active")) {
+          renderHistory();
+        }
+      });
+
+      // Connection state
+      db.ref(".info/connected").on("value", snap => {
+        connectionStatusEl.textContent = snap.val() ? "🟢 Connected (real-time)" : "🟡 Reconnecting...";
+      });
+    }
+
+    // ── Startup ────────────────────────────────────────────────
+    if (!isConfigured) {
+      setupBanner.classList.remove("hidden");
+      connectionStatusEl.textContent = "⚠️ Firebase not configured";
+      inventoryListEl.innerHTML = `<div class="empty-state"><div class="empty-icon">🔧</div><p>Please follow the setup instructions above to connect your database.</p></div>`;
+      historyBodyEl.innerHTML = `<tr><td colspan="5" class="empty-state">Setup required — see instructions above.</td></tr>`;
+      alertPanel.innerHTML = `<div class="alert-box warning"><h3>🔧 Setup Required</h3><p>Follow the Firebase setup instructions at the top of the page to enable data storage and real-time sync.</p></div>`;
+    } else {
+      initFirebaseListeners();
+    }
+  </script>
+
+</body>
+</html>
